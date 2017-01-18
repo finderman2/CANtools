@@ -221,19 +221,21 @@ while frame_counter <= MAX_NUMBER_OF_FRAMES:
   frame_id_hex = hex(message.id)
   
   # Filtering
-  if (frame_id_hex in ID_FILTER) or (SHOW_ALL_IDs == True):
+  if (SHOW_ALL_IDs == True) or (frame_id_hex in ID_FILTER):
     frame = can.Frame(frame_id)
     frame_counter = frame_counter + 1
   
     # Set our frame equal to message data
     frame.dlc = message.dlc
     frame.data = message.data
-        
-    #Make the frame string
-    data_for_file = ("%s" % (frame.data))
-    console_data = (" %s, %s, %s, %s\n" % (time.time(), hex(frame.id)[2:], frame.dlc, data_for_file[1:len(data_for_file)-1]))
-    #Remove spaces between commas
-    data_for_file = data_for_file.replace(" ", "")
+    
+    if (LOGGING_ENABLED == True):
+        #Make the frame string
+        data_for_file = ("%s" % (frame.data))
+        #Remove spaces between commas
+        #data_for_file = data_for_file.replace(" ", "")
+    else:
+        console_data = (" %s, %s, %s, %s\n" % (time.time(), hex(frame.id)[2:], frame.dlc, data_for_file[1:len(data_for_file)-1]))
     
     if SHOW_BATT_DATA == True:
         #ID382
@@ -254,13 +256,13 @@ while frame_counter <= MAX_NUMBER_OF_FRAMES:
         
         #ID102
         if frame.id == 546:
-            pack_volt = '%.2f' %(float((frame.data[3]*256.0 + frame.data[2])/100.0))
+            pack_volt = int( (bin(frame.data[1])[2:].zfill(8) + bin(frame.data[0])[2:].zfill(8)) , 2)/100.0
         
         print("Nom Pack Full Energy (kWh): " + str(nom_packfull_energy))
         print("Nom Energy Remain (kWh): " + str(nom_energy_remain))
-        print("Expected Energy Remain (kWh): "+str(exp_energy_remain))
-        print("Ideal Energy Remain (kWh): "+str(ideal_energy_remain))
-        print("Energy to Charge Comp (kWh): "+str(energy_till_chargedone))
+        print("Expected Energy Remaining (kWh): "+str(exp_energy_remain))
+        print("Ideal Energy Remaining (kWh): "+str(ideal_energy_remain))
+        print("Energy to Charge Complete (kWh): "+str(energy_till_chargedone))
         print("SoC UI (%): "+str(soc_ui))
         print("Pack Voltage: "+str(pack_volt))
         print("-------------------------------")
@@ -311,7 +313,8 @@ while frame_counter <= MAX_NUMBER_OF_FRAMES:
         #Write Formated data to file
         file_.write(write_data)
         #display how many frames we have saved so far
-        print(frame_counter)
+        if frame_counter % 500 == 0:
+            print(frame_counter)
         
     elif LOGGING_ENABLED == True:
         #Log data to console instead
